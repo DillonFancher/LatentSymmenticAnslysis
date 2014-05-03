@@ -98,9 +98,7 @@ def LatLongDist(lat1, lon1, lat2, lon2):
 #Tokenizes the text of each tweet and de-stems each word
 ##########################################################################           
 ##########################################################################            
-def tweetClean(tweet_text):
-    st = LancasterStemmer()
-    print('hi')
+def tweetClean(tweet_text): 
     tweet_clean_text = []
     for doc in tweet_text:
         twitterWords = doc.split()
@@ -132,10 +130,10 @@ def tweetClean(tweet_text):
         #twitterWords = [st.stem(w) for w in twitterWords]
         if len(twitterWords) != 0:
             tweet_clean_text.append(twitterWords)
-    #print(twitterWords)
+
     return tweet_clean_text
             
 ##########################################################################           
 ##########################################################################            
-
+        
 main()
