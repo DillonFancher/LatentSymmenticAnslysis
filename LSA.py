@@ -1,11 +1,11 @@
 import twitter
 import json
-import enchant
 import csv
 import nltk as nk
 import gensim as gsm
 from gensim import corpora, models, similarities
 import numpy as np
+from numpy import linalg as LA
 import nltk as nltk
 import itertools
 from nltk.stem.lancaster import LancasterStemmer
@@ -18,146 +18,72 @@ import math as m
 
 #Main function to do LSA
 def main():
-    Tweets = 'SmallTweets.json'
-    tweet_text, tweet_geo = TweetParser(Tweets)
-    tweet_clean_text = tweetClean(tweet_text)
-    #print(tweet_clean_text)
-    #corpusGen(tweet_clean_text)
+    reader = csv.reader(open("ColoradoTweets.csv", "rb"))
+    tweets = []
+    for row in reader:
+        tweets.append(row)
+    [U, S, Vt] = corpusGen(tweets)
 ##########################################################################
 ##########################################################################
-
-
-
- 
-
-#Parses the large, horribly overinformative (for my purposes)
-#json that each tweet comes with into two python lists: 
-#----->   tweet_text, tweet_geo
-#from these dicts I will be able to do the LSA with gensim
-##########################################################################
-##########################################################################
-
-def TweetParser(Tweets):
-    
-    #Read in the full json for each tweet into python dicts
-    tweet_json = []
-    with open(Tweets) as f:
-        for line in f:
-            tweet_json.append(json.loads(line))
-   
-   
-    #Parse the json file to extract the text object and the lattitude and
-    #longitude coordinates from where the tweet came from  
-    tweet_text = []
-    tweet_geo = []
-    ColoradoTweets = [] 
-    lat1 = 39.0
-    lon1 = -105.5  
-    for obj in tweet_json:
-        lat2 = obj['coordinates']['coordinates'][1]
-        lon2 = obj['coordinates']['coordinates'][0]
-        d = LatLongDist(lat1, lon1, lat2, lon2)
-        if 1 == 1:#d < 300:
-            tweet_text.append(obj['text'])#.encode('utf-8'))
-           # print(tweet_text.encode('utf-8'))
-          #  tweet_geo.append(obj['coordinates']['coordinates'])
-          #  ColoradoTweets.append(obj['text'], obj['coordinates']['coordinates'])
-     
-    
-    return tweet_text, tweet_geo        
-    
-##########################################################################           
-##########################################################################            
-
-
-###########################################################################
-###########################################################################
-def LatLongDist(lat1, lon1, lat2, lon2):
-   
-        
-        #Convert latitude and longitude into radians
-        la1 = m.radians(lat1)
-        la2 = m.radians(lat2)
-        lo1 = m.radians(lon1)
-        lo2 = m.radians(lon2)
        
-        #Calculate the distance between [lat1, long1] and [lat2, long2]
-        dlon = abs(lo1-lo2)
-        dlat = abs(la1-la2)
-        a = (m.sin(dlat/2)**2) + (m.cos(la1)*m.cos(la2)*(m.sin(dlon/2)**2))
-        c = 2*m.atan2(m.sqrt(a), m.sqrt(1-a))
-        d = 3961*c
-    
-        return(d)
-###########################################################################
-###########################################################################
-
-
-#Tokenizes the text of each tweet and de-stems each word
-##########################################################################           
-##########################################################################            
-def tweetClean(tweet_text):
-    st = LancasterStemmer()
-    
-    tweet_clean_text = []
-    for doc in tweet_text:
-        twitterWords = doc.split()
-        print(repr(doc).find('\\')) 
-        #remove stop words using NLTK corpus
-        twitterWords = [word.lower() for word in twitterWords]
-        twitterWords = [w for w in twitterWords if not w in stopwords.words('english')]
-        twitterWords = [w for w in twitterWords if repr(w[:2]) != repr(w[:3])]
-        twitterWords = [w for w in twitterWords if w[:1] != '@' and w[:1] != '#' and w[:4] != 'http']
-        twitterWords = [w for w in twitterWords if repr(w).find('\\') == -1]
-        twitterWords = [w.rstrip('.') for w in twitterWords]
-        twitterWords = [w.rstrip('!') for w in twitterWords]
-        twitterWords = [w.rstrip('?') for w in twitterWords]
-        #twitterWords = [w.encode("utf-8") for w in twitterWords]
-        #remove custom list of stop words using experimentation
-        noiseWords = ["i'm", "like", "get", "don't", "it's", "go", "lol", "got", 
-                      "one", "know", "@", "good", "want", "can't", "need", "see", 
-                      "people", "going", "back", "really", "u", "think", "right",
-                      "never", "day", "time", "never", "that's", "even", ",", "."
-                      "make", "wanna", "you're", "come", "-", "still", "much", "someone",
-                      "today", "gonna", "new", "would", "take", "always", "im", "i'll",
-                      "best", "'", "feel", "getting", "say", "tonight", "last", "ever",
-                      "better", "i've", "look", "fucking", "way", "could", "!", "oh"
-                      "tomorrow", "night", "first", "miss", "ain't", "thank", "2", "bad"
-                      "little", "thanks", "something", "wait", "&amp;", "`", "oh", "make", 
-                      "bad", "let","stop", "well", "tell"]
-    
-        twitterWords = [w for w in twitterWords if not w in noiseWords]
-        twitterWords = [w.encode('utf-8') for w in twitterWords]
-        #twitterWords = [st.stem(w) for w in twitterWords]
-        tweet_clean_text.append(twitterWords)
-    print(tweet_clean_text)
-    return tweet_clean_text
-            
-##########################################################################           
-##########################################################################            
-
-
 #Forms the corpus of tf-idf vectors
 ##########################################################################
 ##########################################################################
 def corpusGen(tweet_clean_text):
     dictionary = corpora.Dictionary(tweet_clean_text)
-    print(dictionary)
+    #print(dictionary)
     
     corpus = [dictionary.doc2bow(tweet) for tweet in tweet_clean_text]
     tfidf = models.TfidfModel(corpus)
     corpus_tfidf = tfidf[corpus]
 
-    print(len(corpus_tfidf))
     tf_idf_MATRIX = gsm.matutils.corpus2dense(corpus_tfidf, num_terms = len(dictionary)) 
     
     U, S, Vt = np.linalg.svd(tf_idf_MATRIX)
-
-    np.savetxt("TFIDF-Matrix.csv", tf_idf_MATRIX, delimiter=",")
-    np.savetxt("U.csv", U, delimiter=",")
-    np.savetxt("S.csv", S, delimiter=",")
-    np.savetxt("Vt.csv", Vt, delimiter=",")
+    print(np.shape(U))
     
+    k = len(S)
+    
+    for p in range(0, 10):
+        trunc = k-p
+        S = np.delete(S, (trunc-1), axis = 0)
+   
+    I = np.identity(len(S))
+    print(len(S))
+    
+    
+    Ulen = np.shape(U)[1]
+    Utrunk = Ulen-len(S)
+    for i in range(0, Utrunk):
+        j = Ulen - i
+        U = np.delete(U, (int(j)-1) , axis = 1)
+    
+    Vtlen = np.shape(Vt)[1]
+    Vtrunk = Vtlen - len(S) 
+    for m in range(0, Vtrunk):
+        n = Vtlen - m
+        Vt = np.delete(Vt, (n-1), axis = 0)
+    
+    print(np.shape(U))
+    print(np.shape(Vt))
+    print(np.shape(I))
+    inter = np.dot(U, I)
+    A = np.dot(inter, Vt)
+    
+    error = tf_idf_MATRIX - A
+    print(np.shape(error))
+    norm = LA.norm(error, 2)
+    print(norm)
+   
+  
+  
+    #np.savetxt("TFIDF-Matrix.csv", tf_idf_MATRIX, delimiter=",")
+    #np.savetxt("U.csv", U, delimiter=",")
+    #np.savetxt("S.csv", S, delimiter=",")
+    #np.savetxt("Vt.csv", Vt, delimiter=",")
+    
+    
+    return U, S, Vt 
     
     
     
