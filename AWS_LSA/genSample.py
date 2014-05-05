@@ -17,24 +17,16 @@ import math as m
 
 #Main function to do LSA
 def main():
-    Tweets = 'SmallTweets.json'
+    Tweets = 'BigTweets.json'
     tweet_text, tweet_geo = TweetParser(Tweets)
     tweet_clean_text = tweetClean(tweet_text)
     
-    with open('ColoradoTweets2.csv', 'wb') as outfile:
+    with open('ColoradoTweets.csv', 'wb') as outfile:
         writer = csv.writer(outfile)
         writer.writerows(tweet_clean_text)
 ##########################################################################
 ##########################################################################
 
-
-
- 
-
-#Parses the large, horribly overinformative (for my purposes)
-#json that each tweet comes with into two python lists: 
-#----->   tweet_text, tweet_geo
-#from these dicts I will be able to do the LSA with gensim
 ##########################################################################
 ##########################################################################
 
@@ -44,8 +36,7 @@ def TweetParser(Tweets):
     tweet_json = []
     with open(Tweets) as f:
         for line in f:
-            tweet_json.append(json.loads(line))
-   
+	    tweet_json.append(json.loads(line))
     print(len(tweet_json))
     #Parse the json file to extract the text object and the lattitude and
     #longitude coordinates from where the tweet came from  
@@ -58,7 +49,7 @@ def TweetParser(Tweets):
         lat2 = obj['coordinates']['coordinates'][1]
         lon2 = obj['coordinates']['coordinates'][0]
         d = LatLongDist(lat1, lon1, lat2, lon2)
-        if 1 == 1: #d < 300:
+        if d < 300:
             tweet_text.append(obj['text'])#.encode('utf-8'))
            # print(tweet_text.encode('utf-8'))
           #  tweet_geo.append(obj['coordinates']['coordinates'])
@@ -144,5 +135,4 @@ def tweetClean(tweet_text):
             
 ##########################################################################           
 ##########################################################################            
-        
 main()

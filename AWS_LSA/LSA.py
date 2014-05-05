@@ -18,7 +18,7 @@ import math as m
 
 #Main function to do LSA
 def main():
-    reader = csv.reader(open("ColoradoTweets2.csv", "rb"))
+    reader = csv.reader(open("ColoradoTweets.csv", "rb"))
     tweets = []
     for row in reader:
         tweets.append(row)
@@ -31,7 +31,7 @@ def main():
 ##########################################################################
 def corpusGen(tweet_clean_text):
     dictionary = corpora.Dictionary(tweet_clean_text)
-    #print(dictionary)
+    print(dictionary)
     
     corpus = [dictionary.doc2bow(tweet) for tweet in tweet_clean_text]
     tfidf = models.TfidfModel(corpus)
@@ -40,17 +40,12 @@ def corpusGen(tweet_clean_text):
     tf_idf_MATRIX = gsm.matutils.corpus2dense(corpus_tfidf, num_terms = len(dictionary)) 
     
     U, S, Vt = np.linalg.svd(tf_idf_MATRIX)
-    print(np.shape(U))
-    
-   
   
-  
-    np.savetxt("TFIDF-Matrix.csv", tf_idf_MATRIX, delimiter=",")
-    np.savetxt("U.csv", U, delimiter=",")
-    np.savetxt("S.csv", S, delimiter=",")
-    np.savetxt("Vt.csv", Vt, delimiter=",")
+    np.savetxt("TFIDF-MATRIX_Big.csv", tf_idf_MATRIX, delimiter=",")
+    np.savetxt("U_Big.csv", U, delimiter=",")
+    np.savetxt("S_Big.csv", S, delimiter=",")
+    np.savetxt("Vt_Big.csv", Vt, delimiter=",")
     
-    print('worked')
     
     return U, S, Vt 
     
